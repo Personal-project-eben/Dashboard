@@ -1,0 +1,44 @@
+generator client {
+  provider      = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  confirmed     Boolean  @default(false)
+  confirmToken  String?  @unique
+  isAdmin       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  subscriptions ServiceSubscription[]
+  widgets       WidgetInstance[]
+}
+
+model ServiceSubscription {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  service              String   // "weather" | "rss" | "github"
+  credentialsEncrypted String?  // null si le service ne demande rien (ex: weather)
+  createdAt            DateTime @default(now())
+
+  @@unique([userId, service]) // un utilisateur ne s'abonne qu'une fois par service
+}
+
+model WidgetInstance {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  service         String
+  widget          String
+  config          Json     // ex: { "city": "Cotonou", "days": 3 }
+  refreshRate     Int      // en secondes
+  position        Int      // ordre d'affichage sur le dashboard
+  createdAt       DateTime @default(now())
+}
