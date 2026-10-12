@@ -37,12 +37,10 @@ authRouter.post("/signup", async (req, res) => {
         },
     });
 
-    // Envoi de l'email de confirmation via Nodemailer
-    try {
-        await sendConfirmationEmail(email, confirmToken);
-    } catch (err) {
+    // Envoi de l'email de confirmation en tâche de fond (non-bloquant)
+    sendConfirmationEmail(email, confirmToken).catch((err) => {
         console.error("[email] Error sending confirmation email:", err);
-    }
+    });
 
     res.status(201).json({ id: user.id, email: user.email, message: "Un email de confirmation vous a été envoyé." });
 });
