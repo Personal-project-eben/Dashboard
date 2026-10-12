@@ -19,13 +19,36 @@ import { prisma } from './db.js';
 
 const app = express();
 
-const CORS_ORIGINS = [
+const defaultOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ];
 
-app.use(cors({ origin: CORS_ORIGINS, credentials: true }));
-app.options('*', cors({ origin: CORS_ORIGINS, credentials: true }));
+const envOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
+app.set('trust proxy', 1);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Autorise les requêtes sans origin (ex: Postman, curl, serveur à serveur)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+            return callback(null, true);
+        }
+        // Autoriser dynamiquement les prévisualisations Vercel (*.vercel.app) si besoin
+        if (origin.endsWith('.vercel.app')) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS non autorisé pour: ${origin}`));
+    },
+    credentials: true,
+}));
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());

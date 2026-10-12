@@ -33,9 +33,11 @@ const COOKIE_NAME = "sid";
 
 // Pose le cookie de session sécurisé (httpOnly, sameSite) sur la réponse.
 export function poserCookieSession(res, sid) {
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie(COOKIE_NAME, sid, {
         httpOnly: true,
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         maxAge: SEPT_JOURS_MS,
     });
 }
